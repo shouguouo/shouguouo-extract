@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-
 /**
  * @author shouguouo~
  * @date 2020/8/23 - 17:03
@@ -66,16 +65,16 @@ public class WriterRunner extends AbstractRunner {
                 }
 
                 // 这里必须指定SQLType 否则在某些情况下OracleDriver不会走批处理导致性能问题。
-                // XB抽取接口表结构与源表一致没有类型转换的问题。如需要其他类型的数据可在switch中添加。
+                // 如需要其他类型的数据可在switch中添加。
                 // 如果需要类型转换需自定义数据类型，提供安全的转换方式。
                 for (int i = 0, len = rsColumn.size(); i < len; i++) {
                     Object value = record.getRecord().get(rsColumn.get(i));
-                    if (value == null || StringUtils.isEmpty(value.toString())) { // 兼容mysql ''处理为null
+                    if (value == null) {
                         preStatement.setNull(i + 1, resultSetMetaData.getMiddle().get(i));
                     } else if (value instanceof Timestamp) {
                         preStatement.setString(i + 1, timeStampToInt((Timestamp) value).toString());
                     } else {
-                        switch (resultSetMetaData.getMiddle().get(i)){
+                        switch (resultSetMetaData.getMiddle().get(i)) {
                             case Types.CHAR:
                             case Types.NCHAR:
                             case Types.CLOB:
@@ -119,7 +118,7 @@ public class WriterRunner extends AbstractRunner {
         } finally {
             DatabaseUtil.closeDBResources(null, preStatement, conn);
             stopwatch.stop();
-            logger.info("WriterRunner elapsed : {}", stopwatch.elapsed(TimeUnit.MILLISECONDS)/1000.0);
+            logger.info("WriterRunner elapsed : {}", stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0);
             latch.countDown();
         }
 
@@ -137,8 +136,8 @@ public class WriterRunner extends AbstractRunner {
 
     public String buildInsertSql(List<String> rsColumn) {
         StringBuilder sb = new StringBuilder(String.format("insert into %s ( %s ) values ",
-            tableNameWithOwner,
-            rsColumn.stream().map(databaseMeta::surroundKey).collect(Collectors.joining(","))));
+                tableNameWithOwner,
+                rsColumn.stream().map(databaseMeta::surroundKey).collect(Collectors.joining(","))));
         sb.append("(");
         for (int i = 0; i < rsColumn.size(); i++) {
             if ((i + 1) != rsColumn.size()) {
